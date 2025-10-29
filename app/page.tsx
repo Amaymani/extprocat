@@ -15,18 +15,14 @@ type ProductRecord = {
 
 function extractImageUrls(rec?: ProductRecord | null): string[] {
   if (!rec?.Product_Images?.length) return [];
-  return rec.Product_Images.map((it: any) => parseZohoImage(it)).filter(
-    Boolean
-  );
+  return rec.Product_Images.map((it: any) => parseZohoImage(it)).filter(Boolean);
 }
 
 export default function Page() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [detailsProduct, setDetailsProduct] = useState<ProductRecord | null>(
-    null
-  );
+  const [detailsProduct, setDetailsProduct] = useState<ProductRecord | null>(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
 
@@ -53,17 +49,22 @@ export default function Page() {
     );
   }
 
-  const currentImages = useMemo(
-    () => extractImageUrls(detailsProduct),
-    [detailsProduct]
-  );
+  const currentImages = useMemo(() => extractImageUrls(detailsProduct), [detailsProduct]);
   useEffect(() => setCarouselIndex(0), [detailsProduct]);
 
   function onDetails(p: ProductRecord) {
     setDetailsProduct(p);
   }
 
-  //use /api/submit-request to submit the selected products in the modal
+  function nextSlide() {
+    if (!currentImages.length) return;
+    setCarouselIndex((i) => (i + 1) % currentImages.length);
+  }
+
+  function prevSlide() {
+    if (!currentImages.length) return;
+    setCarouselIndex((i) => (i - 1 + currentImages.length) % currentImages.length);
+  }
 
   const submitRequest = async (details: any) => {
     try {
@@ -85,7 +86,7 @@ export default function Page() {
   return (
     <main className="max-w-7xl mx-auto px-8 py-10 font-sans text-gray-800 tracking-wide">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-        {/* LEFT COLUMN — square image with overlay name and details below */}
+        {/* LEFT COLUMN — Image Carousel + Details */}
         <div className="space-y-6">
           <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100 shadow-sm">
             {currentImages.length > 0 ? (
@@ -95,11 +96,61 @@ export default function Page() {
                   alt={detailsProduct?.Product_Name ?? "Selected Product"}
                   className="absolute inset-0 w-full h-full object-cover"
                 />
+
+                {/* Overlay name */}
                 {detailsProduct?.Product_Name && (
                   <div className="absolute top-5 left-5 text-white text-3xl font-semibold tracking-wider drop-shadow-md">
                     {detailsProduct.Product_Name}
                   </div>
                 )}
+
+                {/* Prev/Next buttons */}
+                <button
+                  aria-label="Previous image"
+                  onClick={prevSlide}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full px-3 py-1 shadow"
+                >
+                  ‹
+                </button>
+                <button
+                  aria-label="Next image"
+                  onClick={nextSlide}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full px-3 py-1 shadow"
+                >
+                  ›
+                </button>
+
+                {/* Dots */}
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                  {currentImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCarouselIndex(idx)}
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        idx === carouselIndex ? "bg-white" : "bg-white/50"
+                      } border border-black/10`}
+                    />
+                  ))}
+                </div>
+
+                {/* Thumbnails */}
+                {/* {currentImages.length > 1 && (
+                  <div className="absolute bottom-14 left-0 right-0 flex justify-center gap-2 px-2">
+                    <div className="flex gap-2 bg-white/70 backdrop-blur rounded p-1 overflow-x-auto">
+                      {currentImages.map((src, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCarouselIndex(idx)}
+                          className={`h-12 w-12 rounded overflow-hidden ring-2 ${
+                            idx === carouselIndex ? "ring-blue-500" : "ring-transparent"
+                          }`}
+                        >
+                          <img src={src} alt="" className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )} */}
               </>
             ) : (
               <div className="flex flex-col items-center justify-center text-gray-400 h-full">
@@ -124,7 +175,7 @@ export default function Page() {
           )}
         </div>
 
-        {/* RIGHT COLUMN — title + info + product grid */}
+        {/* RIGHT COLUMN — Text + Product Grid */}
         <div>
           <h1 className="text-4xl font-semibold mb-2 tracking-widest">
             Colours & Finishes
