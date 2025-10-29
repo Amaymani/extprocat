@@ -1,20 +1,29 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import ProductCard from "@/components/ProductCard";
 import WishlistModal from "@/components/WishlistModal";
 import axios from "axios";
+import { parseZohoImage } from "@/lib/zoho";
 
 type ProductRecord = {
   ID: string;
   Product_Name?: string;
-  Price?: number;
   Product_Images?: any[];
+  Company_Name?: string;
+  Product_Description?: string;
 };
+
+function extractImageUrls(rec?: ProductRecord | null): string[] {
+  if (!rec?.Product_Images?.length) return [];
+  return rec.Product_Images.map((it: any) => parseZohoImage(it)).filter(Boolean);
+}
 
 export default function Page() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailsProduct, setDetailsProduct] = useState<ProductRecord | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
@@ -26,7 +35,6 @@ export default function Page() {
     try {
       const res = await axios.get(`/api/fetch-products`);
       const data = res.data;
-      console.log("Fetched products:", data);
       setProducts(data.data ?? []);
     } catch (err) {
       console.error("Failed to load products:", err);
@@ -36,79 +44,108 @@ export default function Page() {
   }
 
   function toggleSelect(name: string) {
-    setSelected(prev =>
-      prev.includes(name)
-        ? prev.filter(n => n !== name)
-        : [...prev, name]
+    setSelectedNames(prev =>
+      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
     );
   }
 
-  async function submitWishlist(details: any) {
-    try {
-      const res = await fetch("/api/submit-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selected, details, products }),
-      });
+  const currentImages = useMemo(() => extractImageUrls(detailsProduct), [detailsProduct]);
+  useEffect(() => setCarouselIndex(0), [detailsProduct]);
 
-      const data = await res.json();
-
-      if (res.ok) {
-        alert(data.message);
-        setSelected([]);
-      } else {
-        alert("❌ Failed to add items. Check console.");
-        console.error(data);
-      }
-    } catch (err) {
-      console.error("Error submitting wishlist:", err);
-      alert("An unexpected error occurred.");
-    } finally {
-      setShowModal(false);
-    }
+  function onDetails(p: ProductRecord) {
+    setDetailsProduct(p);
   }
 
   return (
-    <main className="max-w-5xl mx-auto p-6">
-      <h2 className="text-2xl font-semibold mb-4 text-center">
-        Product Catalogue
-      </h2>
+    <main className="max-w-7xl mx-auto px-8 py-10 font-sans text-gray-800 tracking-wide">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+        {/* LEFT COLUMN — square image with overlay name and details below */}
+        <div className="space-y-6">
+          <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100 shadow-sm">
+            {currentImages.length > 0 ? (
+              <>
+                <img
+                  src={currentImages[carouselIndex]}
+                  alt={detailsProduct?.Product_Name ?? "Selected Product"}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                {detailsProduct?.Product_Name && (
+                  <div className="absolute top-5 left-5 text-white text-3xl font-semibold tracking-wider drop-shadow-md">
+                    {detailsProduct.Product_Name}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-gray-400 h-full">
+                <div className="w-24 h-24 bg-gray-200 rounded mb-4"></div>
+                <p>Select a product to preview</p>
+              </div>
+            )}
+          </div>
 
-      {loading ? (
-        <p className="text-gray-500">Loading products...</p>
-      ) : products.length === 0 ? (
-        <p>No products found.</p>
-      ) : (
-        <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map(p => (
-            <ProductCard
-              key={p.ID}
-              product={p}
-              selected={selected.includes(p.Product_Name ?? "")}
-              onToggle={() => toggleSelect(p.Product_Name ?? "")}
-            />
-          ))}
+          {detailsProduct && (
+            <div className="text-left">
+              <h2 className="text-3xl font-semibold mb-1 tracking-widest">
+                {detailsProduct.Product_Name}
+              </h2>
+              <p className="text-sm text-gray-500 uppercase tracking-[0.15em]">
+                {detailsProduct.Company_Name}
+              </p>
+              <p className="text-gray-700 mt-4 text-base leading-relaxed tracking-wide">
+                {detailsProduct.Product_Description}
+              </p>
+            </div>
+          )}
         </div>
-      )}
 
-      <div className="text-center mt-6">
-        <button
-          className="px-5 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-          onClick={() => {
-            if (selected.length === 0)
-              return alert("Please select at least one product.");
-            setShowModal(true);
-          }}
-        >
-          Add Selected to Wishlist
-        </button>
+        {/* RIGHT COLUMN — title + info + product grid */}
+        <div>
+          <h1 className="text-4xl font-semibold mb-2 tracking-widest">Colours & Finishes</h1>
+          <h3 className="text-lg text-gray-500 mb-4 tracking-widest">色 & 仕上げ</h3>
+
+          <p className="text-gray-700 leading-relaxed mb-10 tracking-wide">
+            Ever Art Wood® and Ever Art® Metallic finishes offer exceptional realism,
+            superior durability and fade resistance. In addition, their fire testing
+            performance ensures they are ideal for both exterior and interior applications.
+            With a low light reflectance value, they provide a refined, sophisticated
+            aesthetic.
+          </p>
+
+          {loading ? (
+            <p className="text-gray-500">Loading products...</p>
+          ) : products.length === 0 ? (
+            <p>No products found.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-5">
+              {products.map((p) => (
+                <ProductCard
+                  key={p.ID}
+                  product={p}
+                  selected={selectedNames.includes(p.Product_Name ?? "")}
+                  onToggle={() => toggleSelect(p.Product_Name ?? "")}
+                  onDetails={() => onDetails(p)}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="mt-12">
+            <button
+              className="px-6 py-2 border border-black rounded-full text-sm font-medium hover:bg-black hover:text-white transition tracking-widest"
+              onClick={() => {
+                if (selectedNames.length === 0)
+                  return alert("Please select at least one product.");
+                setShowModal(true);
+              }}
+            >
+              REQUEST SAMPLES
+            </button>
+          </div>
+        </div>
       </div>
 
       {showModal && (
-        <WishlistModal
-          onCancel={() => setShowModal(false)}
-          onSubmit={submitWishlist}
-        />
+        <WishlistModal onCancel={() => setShowModal(false)} onSubmit={() => {}} />
       )}
     </main>
   );

@@ -1,31 +1,71 @@
-// components/ProductCard.tsx
 import React from "react";
 import { parseZohoImage } from "../lib/zoho";
 
 type Props = {
   product: any;
   selected: boolean;
-  onToggle: () => void;
+  onToggle: () => void;   // toggles selection
+  onDetails?: () => void; // opens details modal
 };
 
-export default function ProductCard({ product, selected, onToggle }: Props) {
+export default function ProductCard({ product, selected, onToggle, onDetails }: Props) {
   const name = product.Product_Name ?? "Unnamed Product";
-  const price = product.Price ? `₹${product.Price}` : "";
   const img = parseZohoImage(product.Product_Images?.[0]);
 
   return (
-    <div className="relative bg-white rounded-xl shadow p-3 transform transition hover:-translate-y-1">
-      <label className="absolute top-3 right-3 cursor-pointer z-10">
-        <input className="hidden" type="checkbox" checked={selected} readOnly onClick={onToggle} />
-        <span className={`inline-block w-6 h-6 rounded-full ${selected ? "bg-red-500" : "bg-gray-200"}`}/>
-      </label>
-      <img src={img} alt={name} className="w-full h-40 object-contain mb-3" />
-      <div>
-        <h3 className="font-medium">{name}</h3>
-        <p className="text-gray-500">{price}</p>
+    <div
+      className="group relative w-[125px] cursor-pointer"
+      onClick={() => onToggle()} // <-- clicking anywhere toggles select/unselect
+    >
+      <div className="relative overflow-hidden rounded-lg bg-white shadow">
+        <div className="aspect-square relative">
+          <img
+            src={img}
+            alt={name}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+
+          {/* Hover overlay with buttons */}
+          <div
+            className={[
+              "absolute inset-0 flex flex-col items-center justify-center space-y-2 transition-opacity duration-150",
+              selected
+                ? "opacity-0 pointer-events-none"
+                : "opacity-0 group-hover:opacity-100 pointer-events-none",
+            ].join(" ")}
+          >
+            <button
+              className="bg-white rounded-md border border-gray-300 w-[90px] py-1.5 text-sm hover:bg-gray-50 shadow-sm pointer-events-auto"
+              onClick={(e) => {
+                e.stopPropagation(); // prevent card click
+                onDetails?.();
+              }}
+            >
+              Details
+            </button>
+            <button
+              className="bg-white rounded-md border border-gray-300 w-[90px] py-1.5 text-sm hover:bg-gray-50 shadow-sm pointer-events-auto"
+              onClick={(e) => {
+                e.stopPropagation(); // prevent card click
+                onToggle();
+              }}
+            >
+              {selected ? "Remove Sample" : "Add Sample"}
+            </button>
+          </div>
+
+          {selected && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <div className="h-10 w-10 rounded-full border-2 border-white flex items-center justify-center shadow-md">
+                <span className="text-white text-xl font-semibold">✓</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-      <div className="mt-2">
-        <button className="mt-3 px-3 py-1 text-sm rounded border" onClick={onToggle}>{selected ? "Unselect" : "Select"}</button>
+
+      <div className="mt-2 text-center">
+        <h3 className="text-sm font-medium leading-tight">{name}</h3>
       </div>
     </div>
   );
