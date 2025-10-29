@@ -1,0 +1,20 @@
+{
+  "service": "CREATOR",
+  "config": [],
+  "authConfig": {
+    "type": "oauth",
+    "scopes": [
+      "ZohoCreator.report.READ",
+      "ZohoCreator.form.CREATE",
+      "ZohoCreator.meta.READ"
+    ]
+  },
+  "cspDomains": {
+    "connect-src": [
+      "https://creator.zoho.com",
+      "https://*.zohostatic.com",
+      "https://*.zoho.com",
+      "https://yourdomain.com"
+    ]
+  }
+}
