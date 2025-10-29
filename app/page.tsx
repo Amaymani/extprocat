@@ -15,14 +15,18 @@ type ProductRecord = {
 
 function extractImageUrls(rec?: ProductRecord | null): string[] {
   if (!rec?.Product_Images?.length) return [];
-  return rec.Product_Images.map((it: any) => parseZohoImage(it)).filter(Boolean);
+  return rec.Product_Images.map((it: any) => parseZohoImage(it)).filter(
+    Boolean
+  );
 }
 
 export default function Page() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [detailsProduct, setDetailsProduct] = useState<ProductRecord | null>(null);
+  const [detailsProduct, setDetailsProduct] = useState<ProductRecord | null>(
+    null
+  );
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
 
@@ -44,17 +48,39 @@ export default function Page() {
   }
 
   function toggleSelect(name: string) {
-    setSelectedNames(prev =>
-      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+    setSelectedNames((prev) =>
+      prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
     );
   }
 
-  const currentImages = useMemo(() => extractImageUrls(detailsProduct), [detailsProduct]);
+  const currentImages = useMemo(
+    () => extractImageUrls(detailsProduct),
+    [detailsProduct]
+  );
   useEffect(() => setCarouselIndex(0), [detailsProduct]);
 
   function onDetails(p: ProductRecord) {
     setDetailsProduct(p);
   }
+
+  //use /api/submit-request to submit the selected products in the modal
+
+  const submitRequest = async (details: any) => {
+    try {
+      const res = await axios.post(`/api/submit-request`, {
+        selected: selectedNames,
+        details,
+        products,
+      });
+      const data = res.data;
+      alert(data.message || "Request submitted successfully!");
+      setShowModal(false);
+      setSelectedNames([]);
+    } catch (err) {
+      console.error("Failed to submit request:", err);
+      alert("Failed to submit request. Please try again later.");
+    }
+  };
 
   return (
     <main className="max-w-7xl mx-auto px-8 py-10 font-sans text-gray-800 tracking-wide">
@@ -100,15 +126,19 @@ export default function Page() {
 
         {/* RIGHT COLUMN — title + info + product grid */}
         <div>
-          <h1 className="text-4xl font-semibold mb-2 tracking-widest">Colours & Finishes</h1>
-          <h3 className="text-lg text-gray-500 mb-4 tracking-widest">色 & 仕上げ</h3>
+          <h1 className="text-4xl font-semibold mb-2 tracking-widest">
+            Colours & Finishes
+          </h1>
+          <h3 className="text-lg text-gray-500 mb-4 tracking-widest">
+            色 & 仕上げ
+          </h3>
 
           <p className="text-gray-700 leading-relaxed mb-10 tracking-wide">
-            Ever Art Wood® and Ever Art® Metallic finishes offer exceptional realism,
-            superior durability and fade resistance. In addition, their fire testing
-            performance ensures they are ideal for both exterior and interior applications.
-            With a low light reflectance value, they provide a refined, sophisticated
-            aesthetic.
+            Ever Art Wood® and Ever Art® Metallic finishes offer exceptional
+            realism, superior durability and fade resistance. In addition, their
+            fire testing performance ensures they are ideal for both exterior
+            and interior applications. With a low light reflectance value, they
+            provide a refined, sophisticated aesthetic.
           </p>
 
           {loading ? (
@@ -145,7 +175,10 @@ export default function Page() {
       </div>
 
       {showModal && (
-        <WishlistModal onCancel={() => setShowModal(false)} onSubmit={() => {}} />
+        <WishlistModal
+          onCancel={() => setShowModal(false)}
+          onSubmit={submitRequest}
+        />
       )}
     </main>
   );
