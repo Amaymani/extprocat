@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import ProductCard from "@/components/ProductCard";
 import WishlistModal from "@/components/WishlistModal";
+import ImageWithSkeleton from "@/components/ImageWithSkeleton";
 import axios from "axios";
 import { parseZohoImage } from "@/lib/zoho";
 
@@ -17,6 +18,8 @@ function extractImageUrls(rec?: ProductRecord | null): string[] {
   if (!rec?.Product_Images?.length) return [];
   return rec.Product_Images.map((it: any) => parseZohoImage(it)).filter(Boolean);
 }
+
+
 
 export default function Page() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
@@ -91,15 +94,17 @@ export default function Page() {
           <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100 shadow-sm">
             {currentImages.length > 0 ? (
               <>
-                <img
+                <ImageWithSkeleton
                   src={currentImages[carouselIndex]}
                   alt={detailsProduct?.Product_Name ?? "Selected Product"}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  quality={100}
+                  priority
+                  unoptimized
                 />
 
                 {/* Overlay name */}
                 {detailsProduct?.Product_Name && (
-                  <div className="absolute top-5 left-5 text-white text-3xl font-semibold tracking-wider drop-shadow-md">
+                  <div className="absolute top-5 left-5 text-white text-3xl font-semibold tracking-wider drop-shadow-md z-20">
                     {detailsProduct.Product_Name}
                   </div>
                 )}
@@ -108,49 +113,30 @@ export default function Page() {
                 <button
                   aria-label="Previous image"
                   onClick={prevSlide}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full px-3 py-1 shadow"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full px-3 py-1 shadow z-20"
                 >
                   ‹
                 </button>
                 <button
                   aria-label="Next image"
                   onClick={nextSlide}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full px-3 py-1 shadow"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full px-3 py-1 shadow z-20"
                 >
                   ›
                 </button>
 
                 {/* Dots */}
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
                   {currentImages.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCarouselIndex(idx)}
-                      className={`h-2.5 w-2.5 rounded-full ${
-                        idx === carouselIndex ? "bg-white" : "bg-white/50"
-                      } border border-black/10`}
+                      className={`h-2.5 w-2.5 rounded-full ${idx === carouselIndex ? "bg-white" : "bg-white/50"
+                        } border border-black/10`}
                     />
                   ))}
                 </div>
 
-                {/* Thumbnails */}
-                {/* {currentImages.length > 1 && (
-                  <div className="absolute bottom-14 left-0 right-0 flex justify-center gap-2 px-2">
-                    <div className="flex gap-2 bg-white/70 backdrop-blur rounded p-1 overflow-x-auto">
-                      {currentImages.map((src, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setCarouselIndex(idx)}
-                          className={`h-12 w-12 rounded overflow-hidden ring-2 ${
-                            idx === carouselIndex ? "ring-blue-500" : "ring-transparent"
-                          }`}
-                        >
-                          <img src={src} alt="" className="h-full w-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )} */}
               </>
             ) : (
               <div className="flex flex-col items-center justify-center text-gray-400 h-full">
